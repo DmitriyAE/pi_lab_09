@@ -3,8 +3,9 @@
 import matplotlib.pyplot as plt
 import streamlit as st
 
+
 # Функция, которая вычисляет средний возраст пассажиров каждого класса на основе данных из файла
-def calculate_average_age(filename, consider_family_size=False, family_size=None):
+def calculate_average_age(lines, consider_family_size=False, family_size=None):
     class1_total_age = 0
     class1_passenger_count = 0
     class2_total_age = 0
@@ -12,23 +13,27 @@ def calculate_average_age(filename, consider_family_size=False, family_size=None
     class3_total_age = 0
     class3_passenger_count = 0
 
-    with open(filename) as file:
-        for line in file:
-            data = line.strip().split(',')
-            if data[6] == 'Age' or data[6] == '' or data[2] == 'Pclass' or data[2] == '':
-                continue
-            if not consider_family_size or (consider_family_size and data[7] == str(family_size)):
-                if data[2] == '1':
-                    class1_total_age += float(data[6])
-                    class1_passenger_count += 1
-                elif data[2] == '2':
-                    class2_total_age += float(data[6])
-                    class2_passenger_count += 1
-                elif data[2] == '3':
-                    class3_total_age += float(data[6])
-                    class3_passenger_count += 1
+    for line in lines:
+        data = line.strip().split(',')
+        try:
+            age = float(data[6])
+            pclass = data[2]
+            sibsp = data[7]
+        except (ValueError, IndexError):
+            continue
 
-        class1_average_age = 0
+        if not consider_family_size or (consider_family_size and sibsp == str(family_size)):
+            if pclass == '1':
+                class1_total_age += age
+                class1_passenger_count += 1
+            elif pclass == '2':
+                class2_total_age += age
+                class2_passenger_count += 1
+            elif pclass == '3':
+                class3_total_age += age
+                class3_passenger_count += 1
+
+    class1_average_age = 0
     if class1_passenger_count > 0:
         class1_average_age = class1_total_age / class1_passenger_count
 
@@ -42,6 +47,10 @@ def calculate_average_age(filename, consider_family_size=False, family_size=None
 
     return class1_average_age, class2_average_age, class3_average_age
 
+
+with open('data.csv') as file:
+    lines = file.readlines()
+
 # Визуализируем решение
 st.image('titaniс.jpg')
 st.subheader('Средний возраст пассажиров парохода «Титаник» по каждому классу обслуживания в зависимости от количества родственников (братьев, сестер, сводных братьев, сводных сестер, супругов на борту).')
@@ -51,11 +60,11 @@ selected_family_size = st.selectbox('Для просмотра данных вы
 
 # Заполняем таблицу в зависимости от выбора selected_family_size
 if selected_family_size == 'Без учета родственников':
-    class1_avg, class2_avg, class3_avg = calculate_average_age('data.csv')
+    class1_avg, class2_avg, class3_avg = calculate_average_age(lines)
     st.table({'Класс обслуживания': class_service, 'Средний возраст': [class1_avg, class2_avg, class3_avg]})
 else:
     family_size = int(selected_family_size)
-    class1_avg, class2_avg, class3_avg = calculate_average_age('data.csv', consider_family_size=True, family_size=family_size)
+    class1_avg, class2_avg, class3_avg = calculate_average_age(lines, consider_family_size=True, family_size=family_size)
     st.table({'Класс обслуживания': class_service, 'Средний возраст': [class1_avg, class2_avg, class3_avg]})
 
 # Строим столбчатую диаграмму в зависимости от выбора selected_family_size
